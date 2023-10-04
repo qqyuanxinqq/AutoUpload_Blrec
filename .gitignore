@@ -3,7 +3,6 @@ Temp/
 Videos/
 nohup.log
 nohup.out
-logs/
 log/
 test.py
 *.db
