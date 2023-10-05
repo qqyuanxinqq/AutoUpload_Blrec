@@ -23,7 +23,7 @@ class MyHandler(SimpleHTTPRequestHandler):
 
     @classmethod
     def set_upload_list(cls):
-        with open("upload_config.json", 'r') as f:
+        with open("upload_config.json", 'r', encoding='utf-8') as f:
             config = json.load(f)
         cls.upload_list = list(config.keys())
 
@@ -34,7 +34,7 @@ class MyHandler(SimpleHTTPRequestHandler):
         try:
             # Deserialize the JSON payload
             event = json.loads(post_data)
-            self.update_video_list(event)
+            self.handle_event(event)
 
         except Exception as e:
             logging.exception(e)
@@ -48,7 +48,7 @@ class MyHandler(SimpleHTTPRequestHandler):
         self.wfile.write(b'OK')
 
     @staticmethod
-    def update_video_list(event):
+    def handle_event(event):
         # Extract the event type
         event_type = event.get("type", "")        
 

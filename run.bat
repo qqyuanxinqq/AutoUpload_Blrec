@@ -1,18 +1,17 @@
 @echo off
 chcp 65001
-cd %~dp0
-set PATH=.\ffmpeg\bin;.\python;%PATH%
 
-@REM 不使用代理
-set no_proxy=*
+set config=.\settings.toml
 
-@REM 主机和端口绑定，可以按需修改。
 set host=0.0.0.0
-set port=2233
+set port=22334
 
-@REM 请自行修改 api key，不要使用默认的 api key。
-set api_key=bili2233
+set BLREC_DEFAULT_LOG_DIR=.\log
+set BLREC_DEFAULT_OUT_DIR=.\Videos
 
-python blrec -c settings.toml --open --host %host% --port %port% --api-key %api_key%
+start cmd /K "python main.py" 
+
+blrec -c %config% --open --host %host% --port %port% -o %BLREC_DEFAULT_OUT_DIR% --log-dir %BLREC_DEFAULT_LOG_DIR%
 
 pause
+

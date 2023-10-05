@@ -24,7 +24,7 @@ class BilibiliUploader(BilibiliUploaderBase):
         self.sid, self.mid, _ = login_by_access_token(access_token)
 
     def login_by_access_token_file(self, file_name):
-        with open(file_name, "r") as f:
+        with open(file_name, "r", encoding='utf-8') as f:
             login_data = json.loads(f.read())["token_info"]
         self.access_token = login_data["access_token"]
         self.refresh_token = login_data["refresh_token"]
@@ -38,7 +38,7 @@ class BilibiliUploader(BilibiliUploaderBase):
             }
         )
         try:
-            with open(file_name, "w+") as f: #type:ignore
+            with open(file_name, "w+", encoding='utf-8') as f: #type:ignore
                 f.write(login_data)
         finally:
             return login_data

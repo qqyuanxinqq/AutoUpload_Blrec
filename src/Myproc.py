@@ -24,7 +24,7 @@ class Myproc(get_context('spawn').Process):
         print("Process spawned at PID: ",os.getpid())
         print("===========================",flush=True)
         time.sleep(0.1)
-        with open(self.logfile, "w") as f:
+        with open(self.logfile, "w", encoding='utf-8') as f:
             sys.stdout = f
             sys.stderr = f
             print("PID: ", os.getpid(),flush=True)

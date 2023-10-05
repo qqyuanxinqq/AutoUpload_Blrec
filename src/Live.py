@@ -10,7 +10,7 @@ class Live():
     '''
     def __init__(self, filename = None):
         if filename is not None:
-            with open(filename, 'r') as f:
+            with open(filename, 'r', encoding='utf-8') as f:
                 self._data = json.load(f)
         else:
             self._data = {}
@@ -76,7 +76,7 @@ class Live():
                 filename = self.filename
 
         with FileLock(f"{filename}.lock"):
-            with open(filename, 'w') as f:
+            with open(filename, 'w', encoding='utf-8') as f:
                 json.dump(self._data, f, indent=4)
         return filename
 
@@ -85,7 +85,7 @@ class Live():
         Load the data from the file.
         """
         with FileLock(f"{filename}.lock"):
-            with open(filename, 'r') as f:
+            with open(filename, 'r', encoding='utf-8') as f:
                 self._data = json.load(f)
 
     def islive(self):

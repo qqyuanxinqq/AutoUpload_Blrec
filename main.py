@@ -9,11 +9,11 @@ from src.httpserver import MyHandler
 
 
 if __name__ == "__main__":
-    with open('settings.toml', 'r') as f:
+    with open('settings.toml', 'r', encoding='utf-8') as f:
         settings = toml.load(f)
     video_list_path = os.path.join(settings['output']['out_dir'], "_list")
     os.makedirs(video_list_path, exist_ok=True)
-    upload_log_dir = os.path.join(settings['output']['out_dir'],"_upload_log")
+    upload_log_dir = os.path.join(settings['logging']['log_dir'],"_upload_log")
     os.makedirs(upload_log_dir, exist_ok = True)
 
     MyHandler.config(video_list_path, upload_log_dir, "upload_config.json")

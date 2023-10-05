@@ -44,7 +44,7 @@
     "92613":{
         "username":"username",
         "password":"password",
-        "login_token_file": "/home/xyl/f/blive_v7/Videos/mew.json",
+        "login_token_file": "/home/xyl/f/mew.json",
         
         "upload_args":{"copyright": 1,
             "title": "【少年Pi{month}.{day}.{hour}时 录播】先行弹幕版",

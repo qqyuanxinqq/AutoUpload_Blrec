@@ -18,6 +18,5 @@ export BLREC_DEFAULT_LOG_DIR=./log
 export BLREC_DEFAULT_OUT_DIR=./Videos
 # mkdir -p $BLREC_DEFAULT_OUT_DIR
 
-blrec -c $config --open --host $host --port $port -o $BLREC_DEFAULT_OUT_DIR --log-dir $BLREC_DEFAULT_LOG_DIR
-
-read -p "Press any key to continue..."
+nohup blrec -c $config --open --host $host --port $port -o $BLREC_DEFAULT_OUT_DIR --log-dir $BLREC_DEFAULT_LOG_DIR &
+nohuo main.py > nohup.log 2>&1 & 

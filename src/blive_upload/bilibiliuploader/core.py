@@ -334,7 +334,7 @@ def login_by_access_token(access_token):
 
 
 def upload_cover(access_token, sid, cover_file_path):
-    with open(cover_file_path, "rb") as f:
+    with open(cover_file_path, "rb", encoding='utf-8') as f:
         cover_pic = f.read()
 
     headers = {

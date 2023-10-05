@@ -20,7 +20,7 @@ def config_gen(config_json: str, record_info: dict, up_name = None):
     if not up_name:
         up_name = record_info["room_id"]
     
-    with open(config_json, 'r') as f:
+    with open(config_json, 'r', encoding='utf-8') as f:
         config:dict = json.load(f)
 
     if "upload_args" not in config:
