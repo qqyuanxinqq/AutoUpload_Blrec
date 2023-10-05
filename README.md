@@ -14,23 +14,24 @@
 录制进程读取视频目录进行上传、投稿。
 
 ### 环境
+建议Python3.10+, 3.10以下未测试
 ```
 pip install -r requirements.txt
 ```
-建议Python3.10+, 3.10以下未测试
+
 ### 运行
 - Windows, 在配置好的Python环境中运行`run.bat`
+blrec 和 自动投稿程序 会分别在两个跳出的命令行窗口中运行
 ```
 run.bat
 ```
-blrec 和 自动投稿程序 会分别在两个跳出的命令行窗口中运行
 
 
 - Linux, 在配置好的Python环境中运行`run.sh`
+blrec 和 自动投稿程序 会自动在后台运行
 ```bash
 bash ./run.sh
 ```
-blrec 和 自动投稿程序 会自动在后台运行
 ### 配置
 #### blrec
 - 在`run.sh`或`run.bat`启动脚本中设置端口`port`,视频存放目录，日志目录
