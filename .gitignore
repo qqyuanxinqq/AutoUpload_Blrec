@@ -1,9 +1,7 @@
 # Data&test
 Temp/
-Videos/
 nohup.log
 nohup.out
-log/
 test.py
 *.db
 settings.toml
