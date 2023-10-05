@@ -421,7 +421,7 @@ def metered_upload_chunk(upload_url, server_file_name, local_file_name, chunk_da
         cookies={
             'PHPSESSID': server_file_name
         },
-        timeout = 30,        
+        timeout = 60,        
     )   
     if upload_rate != 0:
         end_time = time()
