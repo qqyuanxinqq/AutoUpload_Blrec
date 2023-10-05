@@ -4,9 +4,9 @@ Videos/
 nohup.log
 nohup.out
 log/
+logs/
 test.py
 *.db
-settings.toml
 
 
 # Byte-compiled / optimized / DLL files
