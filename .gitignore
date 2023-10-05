@@ -1,7 +1,9 @@
 # Data&test
 Temp/
+Videos/
 nohup.log
 nohup.out
+log/
 test.py
 *.db
 settings.toml
@@ -134,6 +136,7 @@ dmypy.json
 .pyre/
 
 data/
+log/
 !config/config.json
 
 # vscode

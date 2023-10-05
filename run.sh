@@ -12,11 +12,11 @@ port=2233
 
 # 设置日志目录
 export BLREC_DEFAULT_LOG_DIR=./log
-# mkdir -p $BLREC_DEFAULT_LOG_DIR
+mkdir $BLREC_DEFAULT_LOG_DIR
 
 # 输出目录
 export BLREC_DEFAULT_OUT_DIR=./Videos
-# mkdir -p $BLREC_DEFAULT_OUT_DIR
+mkdir $BLREC_DEFAULT_OUT_DIR
 
 nohup blrec -c $config --open --host $host --port $port -o $BLREC_DEFAULT_OUT_DIR --log-dir $BLREC_DEFAULT_LOG_DIR &
 nohuo main.py > nohup.log 2>&1 & 
