@@ -62,6 +62,8 @@ class MyHandler(SimpleHTTPRequestHandler):
             MyHandler.handle_room_change(event)
         elif event_type in ["RecordingFinishedEvent", "RecordingCancelledEvent"]:
             MyHandler.handle_recording_finished(event)
+        elif event_type == "VideoFileCreatedEvent":
+            MyHandler.handle_video_create(event)
         elif event_type == "VideoPostprocessingCompletedEvent":
             MyHandler.handle_video_file_completed(event)
         elif event_type == "Error":
@@ -109,11 +111,24 @@ class MyHandler(SimpleHTTPRequestHandler):
         room_id = event['data']['room_info']['room_id']
         if room_id in cls.data_store:
             live = Live(filename = cls.data_store[room_id])
-            live.update_live_title(event['data']['room_info']['title'])
+            live.update_live_title_now(event['data']['room_info']['title'])
             live.dump(path = MyHandler.video_list_path)
         else:
             logging.warning(f"handle_room_change: Room {room_id} not found in data store")
-
+    
+    @classmethod
+    def handle_video_create(cls, event:dict):
+        room_id = event['data']['room_id']
+        if room_id in cls.data_store:
+            live = Live(filename = cls.data_store[room_id])
+            live.add_video_now_v1(
+                    start_time = event['date'],
+                    filename = event['data']['path']
+                    )
+            live.dump(path = cls.video_list_path)
+        else:
+            logging.warning(f"handle_video_file_completed: Room {room_id} not found in data store")
+    
     @classmethod
     def handle_recording_finished(cls, event:dict):
         room_id = event['data']['room_info']['room_id']
@@ -128,9 +143,8 @@ class MyHandler(SimpleHTTPRequestHandler):
     def handle_video_file_completed(cls, event:dict):
         room_id = event['data']['room_id']
         if room_id in cls.data_store:
-            live = live = Live(filename = cls.data_store[room_id])
-            live.add_video_v1(
-                    start_time = event['date'],
+            live = Live(filename = cls.data_store[room_id])
+            live.finalize_video_v1(
                     filename = event['data']['path']
                     )
             live.dump(path = cls.video_list_path)

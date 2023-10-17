@@ -39,29 +39,43 @@ class Live():
             "minute": timestamp_dt.strftime("%M"),
             "second": timestamp_dt.strftime("%S"),
             "live_title": live_title,
+            "live_title_now": live_title,
             "status": status,
             "is_uploaded": is_uploaded,
-            "video_list": []
+            "video_list": [],
+            "video_list_now": {}
         }
 
-    def add_video_v1(
+    def add_video_now_v1(
             self,
             start_time:str,
             filename:str
             ):
         
-        self._data['video_list'].append({
-            "start_time": start_time, # ISO time format
-            "filename": filename,
-            "live_title": self._data["live_title"]
+        self._data['video_list_now'].update(
+            {filename:
+                {
+                "start_time": start_time, # ISO time format
+                "filename": filename,
+                "live_title": self._data["live_title_now"]
+            }
         })
 
-    def update_live_title(self, live_title:str):
-        self._data["live_title"] = live_title
+    def finalize_video_v1(self, filename:str):
+        """
+        Move the video from video_list_now to video_list. 
+        """
+        self._data["video_list"].append(self._data["video_list_now"].pop(filename))
+
+
+    def update_live_title_now(self, live_title_now:str):
+        """
+        Update the live_title_now in the data.
+        """
+        self._data["live_title_now"] = live_title_now
 
     def update_live_status(self, status:str):
         self._data["status"] = status
-
 
     def dump(self, filename = None, path = ""):
         """

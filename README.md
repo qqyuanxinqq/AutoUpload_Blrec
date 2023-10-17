@@ -1,6 +1,6 @@
 # 基于blrec webhook 的自动投稿工具
 
-用于B站(Bilibili)的，全自动录制（含弹幕）、自动投稿命令行工具。
+用于B站的，全自动录制（含弹幕）、自动投稿命令行工具。
 
 **适用于：NAS、服务器直播监控、录制及自动投稿，适配Windows 和 linux**
 
@@ -39,7 +39,7 @@ bash ./run.sh
 ### 配置
 #### blrec
 - 在`run.sh`或`run.bat`启动脚本中设置端口`port`,视频存放目录，日志目录
-- 打开`http://localhost:port`即可进入blrec控制面板
+- 打开`http://localhost:port`进入blrec前端界面进行设置
 - blrec具体配置文件为`settings.toml`，详见 [blrec](https://github.com/acgnhiki/blrec)
 
 #### 自动投稿

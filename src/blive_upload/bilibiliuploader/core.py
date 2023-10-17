@@ -8,7 +8,7 @@ import hashlib
 
 from concurrent.futures import ThreadPoolExecutor, as_completed, wait
 import base64
-from time import sleep, time
+import time
 import json
 import sys
 from filelock import FileLock
@@ -403,9 +403,10 @@ def metered_upload_chunk(upload_url, server_file_name, local_file_name, chunk_da
         False: upload chunk fail.
     """
 
-    start_time = time()
+    start_time = time.time()
+    
+    print(time.strftime('%Y-%m-%d %H:%M:%S',time.localtime(time.time())))
     print("chunk{}/{}".format(chunk_id, chunk_total_num))
-    print("filename: {}".format(local_file_name))
     files = {
         'version': (None, '2.0.0.1054'),
         'filesize': (None, chunk_size),
@@ -424,10 +425,10 @@ def metered_upload_chunk(upload_url, server_file_name, local_file_name, chunk_da
         timeout = 60,        
     )   
     if upload_rate != 0:
-        end_time = time()
+        end_time = time.time()
         expected_time = chunk_size/upload_rate
         # print("Slow down", max(expected_time - (end_time - start_time), 0))
-        sleep(max(expected_time - (end_time - start_time), 0))
+        time.sleep(max(expected_time - (end_time - start_time), 0))
 
     return status
 
@@ -702,6 +703,7 @@ class BilibiliUploaderBase():
                         server_file_name= item.get("server_name")
                     ))
                 if live_info.islive():
+                    print(time.strftime('%Y-%m-%d %H:%M:%S',time.localtime(time.time())))
                     print("The live is still on, waiting for new videos.", flush=True)
                 else:
                     print("The live is done, stop waiting for new videos.")
@@ -728,7 +730,7 @@ class BilibiliUploaderBase():
                     if self.submit_mode == 2:
                         self.avid, self.bvid = submit_videos(self.access_token, self.sid, self.parts[0:post_videos_num], submit_data, existing_videos, self.avid)
             else:
-                sleep(40)
+                time.sleep(40)
                 dead_loop_count += 1
         if self.submit_mode == 1:
             self.avid, self.bvid = submit_videos(self.access_token, self.sid, self.parts, submit_data, existing_videos, self.avid)
