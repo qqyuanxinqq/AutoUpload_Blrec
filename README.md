@@ -11,7 +11,7 @@
 - 一键启动
 
 ## 基本结构
-blrec录播，基于其webhook事件触发视频目录编写以及投稿进程。
+[blrec](https://github.com/acgnhiki/blrec)录播，基于其webhook事件触发视频目录编写以及投稿进程。
 
 投稿进程读取动态更新的视频目录进行上传、投稿。
 
