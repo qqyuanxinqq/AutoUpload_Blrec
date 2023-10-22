@@ -43,6 +43,7 @@ class Live():
             "status": status,
             "is_uploaded": is_uploaded,
             "video_list": [],
+            #Uncessary part
             "video_list_now": {}
         }
 
@@ -51,15 +52,15 @@ class Live():
             start_time:str,
             filename:str
             ):
-        
-        self._data['video_list_now'].update(
-            {filename:
+        video = {filename:
                 {
                 "start_time": start_time, # ISO time format
                 "filename": filename,
                 "live_title": self._data["live_title_now"]
             }
-        })
+        }
+        self._data['video_list_now'].update(video)
+        return video
 
     def finalize_video_v1(self, filename:str):
         """
@@ -80,6 +81,9 @@ class Live():
     def dump(self, filename = None, path = ""):
         """
         Dump the data to the file.
+        args:
+            filename: the path to save the data. If None, use the filename in the data.
+            path: the directory to save the data. If None, use the current directory.
         """
         if filename is None:
             if self.filename is not None:

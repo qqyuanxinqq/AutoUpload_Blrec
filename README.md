@@ -38,7 +38,8 @@ bash ./run.sh
 ```
 ### 配置
 #### blrec
-- 在`run.sh`或`run.bat`启动脚本中设置端口`port`,视频存放目录，日志目录
+- 在`run.sh`或`run.bat`启动脚本中设置端口`port`
+- 在`settings.toml`中设置视频存放目录、日志目录，可使用绝对路径
 - 打开`http://localhost:port`进入blrec前端界面进行设置
 - blrec具体配置文件为`settings.toml`，详见 [blrec](https://github.com/acgnhiki/blrec)
 

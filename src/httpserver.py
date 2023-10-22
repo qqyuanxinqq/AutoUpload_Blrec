@@ -10,30 +10,36 @@ from .blive_upload import configured_upload
 
 class MyHandler(SimpleHTTPRequestHandler):
 
-    data_store = {}
-    video_list_path = ""
-    upload_log_dir = ""
-    upload_list = []
+    # json file path for each room_id
+    room_ids = {}
+    videos_active = {}
+    lists_fin_wait = set()
+    
+    _video_list_directory = ""
+    _upload_log_dir = ""
+    _upload_list = []
     
     @classmethod
     def config(cls, video_list_path,upload_log_dir, upload_config_path):
-        cls.video_list_path = video_list_path 
-        cls.upload_log_dir = upload_log_dir
+        cls._video_list_directory = video_list_path 
+        cls._upload_log_dir = upload_log_dir
         cls.upload_config_path = upload_config_path
 
     @classmethod
     def set_upload_list(cls):
         with open("upload_config.json", 'r', encoding='utf-8') as f:
             config = json.load(f)
-        cls.upload_list = list(config.keys())
+        cls._upload_list = list(config.keys())
 
 
     def do_POST(self):
         content_length = int(self.headers['Content-Length'])
         post_data = self.rfile.read(content_length).decode('utf-8')
+
         try:
             # Deserialize the JSON payload
             event = json.loads(post_data)
+            self.log_event(event)
             self.handle_event(event)
 
         except Exception as e:
@@ -42,22 +48,32 @@ class MyHandler(SimpleHTTPRequestHandler):
 
         # You might want to send a response back to the client
         # Here, we send a simple "OK" text.
-        self.send_response(200)
+        self.send_response_only(200)
         self.send_header('Content-type', 'text/plain')
         self.end_headers()
         self.wfile.write(b'OK')
 
+    def log_event(self, event):
+        event_type = event.get("type", "")
+        if event['data'].get('room_id'):
+            room_id = event['data']['room_id']
+        elif event['data'].get('room_info'):
+            room_id = event['data']['room_info']['room_id']
+        else:
+            room_id = ""
+        format = f"[{room_id}] {event_type}"
+        self.log_message(format)
+
     @staticmethod
     def handle_event(event):
         # Extract the event type
-        event_type = event.get("type", "")        
+        event_type = event.get("type", "")
 
-        print(event_type)
+        # Handle the event according to its type      
         if event_type == "RecordingStartedEvent":
             MyHandler.handle_recording_started(event)
             MyHandler.set_upload_list()
             MyHandler.upload(event)
-
         elif event_type == "RoomChangeEvent":
             MyHandler.handle_room_change(event)
         elif event_type in ["RecordingFinishedEvent", "RecordingCancelledEvent"]:
@@ -76,85 +92,101 @@ class MyHandler(SimpleHTTPRequestHandler):
         """
         Upload the video to Bilibili, if room_id is in upload_list.
         """
-
         room_id = event['data']['room_info']['room_id']
-        if str(room_id) in cls.upload_list:
+
+        if str(room_id) in cls._upload_list:
             logfile = os.path.join(
-                cls.upload_log_dir,
-                os.path.basename(cls.data_store[room_id]).split('.')[0] + '.log'
+                cls._upload_log_dir,
+                os.path.basename(cls.room_ids[room_id]).split('.')[0] + '.log'
                 )
-            p = Myproc(target = configured_upload, args = (cls.data_store[room_id], cls.upload_config_path), name="[{}]Uploader".format(room_id))
+            p = Myproc(target = configured_upload, args = (cls.room_ids[room_id], cls.upload_config_path), name="[{}]Uploader".format(room_id))
             p.set_output_err(logfile)
             p.start()
             p.post_run()
-            print("=============================")
-            print("开始上传"+ str(room_id))
-            print("=============================")
+            print("=============================", flush=True)
+            print("开始上传"+ str(room_id), flush=True)
+            print("=============================", flush=True)
         else:
-            logging.warning(f"upload: Room {room_id} not found in upload list{cls.upload_list}")
+            logging.warning(f"upload: Room {room_id} not found in upload list{cls._upload_list}")
         
     @classmethod
     def handle_recording_started(cls, event:dict):
         live = Live()
         room_id = event['data']['room_info']['room_id']
+        
         live.create_v1(
                 room_id = room_id,
                 start_time = event['date'],
                 live_title = event['data']['room_info']['title'],
                 status="Living"
                 )
-        live.dump(path = MyHandler.video_list_path)
-        cls.data_store[room_id] = live.dump(path = MyHandler.video_list_path)
-
+        cls.room_ids[room_id] = live.dump(path = MyHandler._video_list_directory)
+    
+    @classmethod
+    def handle_recording_finished(cls, event:dict):
+        room_id = event['data']['room_info']['room_id']
+        try:
+            list_file = cls.room_ids.pop(room_id)
+            cls.lists_fin_wait.add(list_file)
+        except Exception as e:
+            logging.exception(e)
+        
+        
     @classmethod
     def handle_room_change(cls, event:dict):
         room_id = event['data']['room_info']['room_id']
-        if room_id in cls.data_store:
-            live = Live(filename = cls.data_store[room_id])
+
+        if room_id in cls.room_ids:
+            live = Live(filename = cls.room_ids[room_id])
             live.update_live_title_now(event['data']['room_info']['title'])
-            live.dump(path = MyHandler.video_list_path)
+            live.dump()
         else:
             logging.warning(f"handle_room_change: Room {room_id} not found in data store")
     
     @classmethod
     def handle_video_create(cls, event:dict):
         room_id = event['data']['room_id']
-        if room_id in cls.data_store:
-            live = Live(filename = cls.data_store[room_id])
+        filename = event['data']['path']
+
+        if room_id in cls.room_ids:
+            live = Live(filename = cls.room_ids[room_id])
             live.add_video_now_v1(
                     start_time = event['date'],
-                    filename = event['data']['path']
+                    filename = filename
                     )
-            live.dump(path = cls.video_list_path)
+            list_file = live.dump()
+            cls.videos_active[filename] = list_file
         else:
-            logging.warning(f"handle_video_file_completed: Room {room_id} not found in data store")
-    
-    @classmethod
-    def handle_recording_finished(cls, event:dict):
-        room_id = event['data']['room_info']['room_id']
-        if room_id in cls.data_store:
-            live = Live(filename = cls.data_store[room_id])
-            live.update_live_status("Done")
-            live.dump(path = MyHandler.video_list_path)
-        else:
-            logging.warning(f"handle_recording_finished: Room {room_id} not found in data store")
+            logging.warning(f"handle_video_create: Room {room_id} not found in data store")
 
     @classmethod
     def handle_video_file_completed(cls, event:dict):
-        room_id = event['data']['room_id']
-        if room_id in cls.data_store:
-            live = Live(filename = cls.data_store[room_id])
-            live.finalize_video_v1(
-                    filename = event['data']['path']
-                    )
-            live.dump(path = cls.video_list_path)
-        else:
-            logging.warning(f"handle_video_file_completed: Room {room_id} not found in data store")
+        filename = event['data']['path']
+        list_file = cls.videos_active.pop(filename)
+        
+        live = Live(filename = list_file)
+        live.finalize_video_v1(
+                filename = filename
+                )
+        live.dump()
+
+    
+        if list_file in cls.lists_fin_wait:
+            live = Live(filename = list_file)
+            live.update_live_status("Done")
+            live.dump()
+
+            cls.lists_fin_wait.remove(list_file)
+            logging.warning(f"Video list {list_file} is finished.")
 
     @classmethod
     def shutdown(cls):
-        for room_id in cls.data_store:
-            live = Live(filename = cls.data_store[room_id])
+        for room_id in cls.room_ids:
+            live = Live(filename = cls.room_ids[room_id])
             live.update_live_status("Done")
-            live.dump(path = cls.video_list_path)
+            live.dump()
+        for list_file in cls.lists_fin_wait:
+            live = Live(filename = list_file)
+            live.update_live_status("Done")
+            live.dump()
 
