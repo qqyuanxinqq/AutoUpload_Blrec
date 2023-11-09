@@ -7,6 +7,7 @@ import toml
 from src.httpserver import MyHandler
 
 
+PORT = 22333
 
 if __name__ == "__main__":
     with open('settings.toml', 'r', encoding='utf-8') as f:
@@ -18,9 +19,9 @@ if __name__ == "__main__":
 
     MyHandler.config(video_list_path, upload_log_dir, "upload_config.json")
 
-    server_address = ('', 22333)
+    server_address = ('', PORT)
     httpd = HTTPServer(server_address, MyHandler)
-    print("Serving on port 22333...")
+    print(f"Listening to port {PORT}...", flush=True)
     try:
         httpd.serve_forever()
     except Exception as e:

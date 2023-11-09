@@ -127,10 +127,21 @@ class MyHandler(SimpleHTTPRequestHandler):
         room_id = event['data']['room_info']['room_id']
         try:
             list_file = cls.room_ids.pop(room_id)
-            cls.lists_fin_wait.add(list_file)
+            
+            if list_file in cls.videos_active.values():
+                cls.lists_fin_wait.add(list_file)
+            else:
+                cls.finalize_list(list_file)
+
         except Exception as e:
             logging.exception(e)
-        
+
+    @classmethod
+    def finalize_list(cls, list_file):
+        live = Live(filename = list_file)
+        live.update_live_status("Done")
+        live.dump()
+        logging.warning(f"Video list '{list_file}' is finished.")        
         
     @classmethod
     def handle_room_change(cls, event:dict):
@@ -172,12 +183,10 @@ class MyHandler(SimpleHTTPRequestHandler):
 
     
         if list_file in cls.lists_fin_wait:
-            live = Live(filename = list_file)
-            live.update_live_status("Done")
-            live.dump()
-
-            cls.lists_fin_wait.remove(list_file)
-            logging.warning(f"Video list {list_file} is finished.")
+            if list_file not in cls.videos_active.values():
+                cls.finalize_list(list_file)
+                cls.lists_fin_wait.remove(list_file)
+            
 
     @classmethod
     def shutdown(cls):
