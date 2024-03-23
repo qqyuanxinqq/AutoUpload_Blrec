@@ -10,9 +10,11 @@ from .blive_upload import configured_upload
 
 class MyHandler(SimpleHTTPRequestHandler):
 
-    # json file path for each room_id
+    # dict room_id: list_file path
     room_ids = {}
+    # dict active video_file path (not full path, root only, without extension): list_file path
     videos_active = {}
+    # set of list_file path for each list_file that is waiting for all videos to be finalized
     lists_fin_wait = set()
     
     _video_list_directory = ""
@@ -111,6 +113,9 @@ class MyHandler(SimpleHTTPRequestHandler):
         
     @classmethod
     def handle_recording_started(cls, event:dict):
+        """
+        Create a new video list file, and add dumped filename to room_ids.
+        """
         live = Live()
         room_id = event['data']['room_info']['room_id']
         
@@ -124,6 +129,10 @@ class MyHandler(SimpleHTTPRequestHandler):
     
     @classmethod
     def handle_recording_finished(cls, event:dict):
+        """
+        Pop the video list file from room_ids. 
+        Put it into lists_fin_wait if there is video active, otherwise finalize it.
+        """
         room_id = event['data']['room_info']['room_id']
         try:
             list_file = cls.room_ids.pop(room_id)
@@ -138,6 +147,9 @@ class MyHandler(SimpleHTTPRequestHandler):
 
     @classmethod
     def finalize_list(cls, list_file):
+        """
+        Finalize the video list file, set status to Done.
+        """
         live = Live(filename = list_file)
         live.update_live_status("Done")
         live.dump()
@@ -166,14 +178,20 @@ class MyHandler(SimpleHTTPRequestHandler):
                     filename = filename
                     )
             list_file = live.dump()
-            cls.videos_active[filename] = list_file
+            (root, ext) = os.path.splitext(filename)
+            cls.videos_active[root] = list_file
         else:
             logging.warning(f"handle_video_create: Room {room_id} not found in data store")
 
     @classmethod
     def handle_video_file_completed(cls, event:dict):
+        """
+        Finalize the video file, and remove it from videos_active.
+        Then check if the paraent list is in lists_fin_wait, finalize it if no more video in the list is active.
+        """
         filename = event['data']['path']
-        list_file = cls.videos_active.pop(filename)
+        (root, ext) = os.path.splitext(filename)
+        list_file = cls.videos_active.pop(root)
         
         live = Live(filename = list_file)
         live.finalize_video_v1(
@@ -181,7 +199,7 @@ class MyHandler(SimpleHTTPRequestHandler):
                 )
         live.dump()
 
-    
+        # if the list is in lists_fin_wait fin_wait, finalize it if no video is active
         if list_file in cls.lists_fin_wait:
             if list_file not in cls.videos_active.values():
                 cls.finalize_list(list_file)
@@ -190,6 +208,9 @@ class MyHandler(SimpleHTTPRequestHandler):
 
     @classmethod
     def shutdown(cls):
+        """
+        Set status of all video list files to Done.
+        """
         for room_id in cls.room_ids:
             live = Live(filename = cls.room_ids[room_id])
             live.update_live_status("Done")

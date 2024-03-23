@@ -52,7 +52,8 @@ class Live():
             start_time:str,
             filename:str
             ):
-        video = {filename:
+        (root, ext) = os.path.splitext(filename)
+        video = {root:
                 {
                 "start_time": start_time, # ISO time format
                 "filename": filename,
@@ -65,8 +66,14 @@ class Live():
     def finalize_video_v1(self, filename:str):
         """
         Move the video from video_list_now to video_list. 
+        The video may have different extension, so only the root is used to find the video.
         """
-        self._data["video_list"].append(self._data["video_list_now"].pop(filename))
+        (root, ext) = os.path.splitext(filename)
+        video = self._data["video_list_now"].pop(root)
+        #Update the filename in case the extension is changed.
+        video["filename"] = filename
+
+        self._data["video_list"].append(video)
 
 
     def update_live_title_now(self, live_title_now:str):
@@ -81,6 +88,7 @@ class Live():
     def dump(self, filename = None, path = ""):
         """
         Dump the data to the file.
+        Return the filename.
         args:
             filename: the path to save the data. If None, use the filename in the data.
             path: the directory to save the data. If None, use the current directory.
