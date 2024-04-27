@@ -858,10 +858,12 @@ def submit_videos(access_token, sid, parts, submit_data, existing_videos, avid =
         )
     print("Current {} videos submitted, status code: {}".format(len(parts), r.status_code), flush=True)
     # print(r.content.decode())
-    
 
     try:
         data = r.json()["data"]
+        avid = data["aid"]
+        bvid = data["bvid"]
+        print("Avid: {}, Bvid: {}".format(avid, bvid), flush=True)
     except:
         raise Exception(r.json())
     

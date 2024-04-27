@@ -7,6 +7,7 @@ from .Live import Live
 from .Myproc import Myproc
 
 from .blive_upload import configured_upload
+from .api import get_title
 
 class MyHandler(SimpleHTTPRequestHandler):
 
@@ -119,10 +120,14 @@ class MyHandler(SimpleHTTPRequestHandler):
         live = Live()
         room_id = event['data']['room_info']['room_id']
         
+        title = get_title(room_id)
+        if title is None:
+            title = event['data']['room_info']['title']
+
         live.create_v1(
                 room_id = room_id,
                 start_time = event['date'],
-                live_title = event['data']['room_info']['title'],
+                live_title = title,
                 status="Living"
                 )
         cls.room_ids[room_id] = live.dump(path = MyHandler._video_list_directory)
@@ -159,9 +164,13 @@ class MyHandler(SimpleHTTPRequestHandler):
     def handle_room_change(cls, event:dict):
         room_id = event['data']['room_info']['room_id']
 
+        title = get_title(room_id)
+        if title is None:
+            title = event['data']['room_info']['title']
+
         if room_id in cls.room_ids:
             live = Live(filename = cls.room_ids[room_id])
-            live.update_live_title_now(event['data']['room_info']['title'])
+            live.update_live_title_now(title)
             live.dump()
         else:
             logging.warning(f"handle_room_change: Room {room_id} not found in data store")
