@@ -180,8 +180,13 @@ class MyHandler(SimpleHTTPRequestHandler):
         room_id = event['data']['room_id']
         filename = event['data']['path']
 
+        title = get_title(room_id)
+
         if room_id in cls.room_ids:
             live = Live(filename = cls.room_ids[room_id])
+            if title is not None:
+                live.update_live_title_now(title)
+            
             live.add_video_now_v1(
                     start_time = event['date'],
                     filename = filename
