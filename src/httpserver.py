@@ -208,10 +208,23 @@ class MyHandler(SimpleHTTPRequestHandler):
         list_file = cls.videos_active.pop(root)
         
         live = Live(filename = list_file)
-        live.finalize_video_v1(
-                filename = filename
-                )
+
+        # if this is the first video file, update live_title and video title
+        # This because the lag in title updating from bilibili API
+        if len(live._data['video_list']) == 0:
+            title = get_title(live._data['room_id'])
+            if title is not None:
+                live.update_live_title(title)
+                live.update_live_title_now(title)
+                live.finalize_video_v1(filename = filename, title = title)
+        else:
+            live.finalize_video_v1(filename = filename)
+
         live.dump()
+
+
+
+
 
         # if the list is in lists_fin_wait fin_wait, finalize it if no video is active
         if list_file in cls.lists_fin_wait:

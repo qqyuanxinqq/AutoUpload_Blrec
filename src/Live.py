@@ -63,7 +63,7 @@ class Live():
         self._data['video_list_now'].update(video)
         return video
 
-    def finalize_video_v1(self, filename:str):
+    def finalize_video_v1(self, filename:str, title = ""):
         """
         Move the video from video_list_now to video_list. 
         The video may have different extension, so only the root is used to find the video.
@@ -72,6 +72,9 @@ class Live():
         video = self._data["video_list_now"].pop(root)
         #Update the filename in case the extension is changed.
         video["filename"] = filename
+        # Update video title if provided.
+        if title != "":
+            video["live_title"] = title
 
         self._data["video_list"].append(video)
 
@@ -81,6 +84,12 @@ class Live():
         Update the live_title_now in the data.
         """
         self._data["live_title_now"] = live_title_now
+
+    def update_live_title(self, live_title:str):
+        """
+        Update the live_title in the data.
+        """
+        self._data["live_title"] = live_title
 
     def update_live_status(self, status:str):
         self._data["status"] = status
