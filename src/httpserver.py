@@ -1,4 +1,4 @@
-from http.server import SimpleHTTPRequestHandler, HTTPServer
+from http.server import BaseHTTPRequestHandler, HTTPServer
 import json
 import logging
 import os
@@ -9,7 +9,7 @@ from .Myproc import Myproc
 from .blive_upload import configured_upload
 from .api import get_title
 
-class MyHandler(SimpleHTTPRequestHandler):
+class MyHandler(BaseHTTPRequestHandler):
 
     # dict room_id: list_file path
     room_ids = {}
