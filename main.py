@@ -1,6 +1,6 @@
 import os
 import logging
-from http.server import HTTPServer
+from http.server import ThreadingHTTPServer 
 
 import toml
 
@@ -20,7 +20,7 @@ if __name__ == "__main__":
     MyHandler.config(video_list_path, upload_log_dir, "upload_config.json")
 
     server_address = ('', PORT)
-    httpd = HTTPServer(server_address, MyHandler)
+    httpd = ThreadingHTTPServer(server_address, MyHandler)
     print(f"Listening to port {PORT}...", flush=True)
     try:
         httpd.serve_forever()

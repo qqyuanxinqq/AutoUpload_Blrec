@@ -15,6 +15,7 @@
         "username":"username",
         "password":"password",
         "login_token_file": "/home/xyl/f/blive_v6/Videos/kaofish/upload_log/bililogin.json",
+        "danmu_embedding": true,
         
         "upload_args":{"copyright": 1,
             "title": "【⭐烤鱼子{month}月{day}日{hour}时 录播⭐】{live_title}",

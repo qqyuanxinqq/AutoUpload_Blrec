@@ -1,4 +1,4 @@
-from http.server import BaseHTTPRequestHandler, HTTPServer
+from http.server import BaseHTTPRequestHandler
 import json
 import logging
 import os
@@ -8,10 +8,11 @@ from .Myproc import Myproc
 
 from .blive_upload import configured_upload
 from .api import get_title
+from .danmu import burn_subtitle_jsonl
 
 class MyHandler(BaseHTTPRequestHandler):
 
-    # dict room_id: list_file path
+    # dict room_id(int): list_file path
     room_ids = {}
     # dict active video_file path (not full path, root only, without extension): list_file path
     videos_active = {}
@@ -20,7 +21,8 @@ class MyHandler(BaseHTTPRequestHandler):
     
     _video_list_directory = ""
     _upload_log_dir = ""
-    _upload_list = []
+    _upload_list = []   #str
+    _danmu_embed_list = []  #str
     
     @classmethod
     def config(cls, video_list_path,upload_log_dir, upload_config_path):
@@ -34,11 +36,27 @@ class MyHandler(BaseHTTPRequestHandler):
             config = json.load(f)
         cls._upload_list = list(config.keys())
 
+    @classmethod
+    def set_danmu_embed_list(cls):
+        with open("upload_config.json", 'r', encoding='utf-8') as f:
+            config = json.load(f)
+        temp = []
+        for key, value in config.items():
+            if value.get("danmu_embedding"):
+                temp.append(key)
+        cls._danmu_embed_list = temp
+
 
     def do_POST(self):
+        # You might want to send a response back to the client
+        # Here, we send a simple "OK" text.
+        self.send_response_only(200)
+        self.send_header('Content-type', 'text/plain')
+        self.end_headers()
+        self.wfile.write(b'OK')
+
         content_length = int(self.headers['Content-Length'])
         post_data = self.rfile.read(content_length).decode('utf-8')
-
         try:
             # Deserialize the JSON payload
             event = json.loads(post_data)
@@ -47,14 +65,6 @@ class MyHandler(BaseHTTPRequestHandler):
 
         except Exception as e:
             logging.exception(e)
-
-
-        # You might want to send a response back to the client
-        # Here, we send a simple "OK" text.
-        self.send_response_only(200)
-        self.send_header('Content-type', 'text/plain')
-        self.end_headers()
-        self.wfile.write(b'OK')
 
     def log_event(self, event):
         event_type = event.get("type", "")
@@ -76,6 +86,7 @@ class MyHandler(BaseHTTPRequestHandler):
         if event_type == "RecordingStartedEvent":
             MyHandler.handle_recording_started(event)
             MyHandler.set_upload_list()
+            MyHandler.set_danmu_embed_list()
             MyHandler.upload(event)
         elif event_type == "RoomChangeEvent":
             MyHandler.handle_room_change(event)
@@ -209,6 +220,10 @@ class MyHandler(BaseHTTPRequestHandler):
         
         live = Live(filename = list_file)
 
+        if int(live._data['room_id']) in cls.room_ids:
+            if str(live._data['room_id']) in cls._danmu_embed_list:
+                burn_subtitle_jsonl(filename)
+
         # if this is the first video file, update live_title and video title
         # This because the lag in title updating from bilibili API
         if len(live._data['video_list']) == 0:
@@ -221,10 +236,6 @@ class MyHandler(BaseHTTPRequestHandler):
             live.finalize_video_v1(filename = filename)
 
         live.dump()
-
-
-
-
 
         # if the list is in lists_fin_wait fin_wait, finalize it if no video is active
         if list_file in cls.lists_fin_wait:
