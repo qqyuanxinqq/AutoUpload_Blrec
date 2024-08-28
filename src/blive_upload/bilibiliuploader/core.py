@@ -702,6 +702,7 @@ class BilibiliUploaderBase():
                         title = parse_video_title(self.title_format, item),
                         server_file_name= item.get("server_name")
                     ))
+                
                 if live_info.islive():
                     print(time.strftime('%Y-%m-%d %H:%M:%S',time.localtime(time.time())))
                     print("The live is still on, waiting for new videos.", flush=True)
@@ -725,6 +726,7 @@ class BilibiliUploaderBase():
                         live_info.load(live_info.filename)
                         live_info.update_server_name(video_part.path, server_name)
                         live_info.dump(live_info.filename)
+                        submit_data["title"] = live_info._data["live_title"]
 
                     post_videos_num += 1
                     if self.submit_mode == 2:
