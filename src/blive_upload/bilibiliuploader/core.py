@@ -642,7 +642,6 @@ class BilibiliUploaderBase():
         elif self.submit_mode ==2:
             print("submission after each video part")
 
-        existing_videos = []
         if not self.avid and not self.bvid:
             print("Add new video post")
         else:
@@ -652,7 +651,6 @@ class BilibiliUploaderBase():
                 print('Replace existing video post: Avid: {}, Bvid: {}'.format(self.avid, self.bvid))
             elif self.replace_tag == 0:
                 print('Append to existing video post: Avid: {}, Bvid: {}'.format(self.avid, self.bvid))
-                existing_videos = archive_posted_videos(self.access_token, self.sid,self.avid)['videos']
             else:
                 raise Exception("replace_tag should be 0 or 1")
 
@@ -718,24 +716,28 @@ class BilibiliUploaderBase():
                 dead_loop_count = 0
                 for video_part in self.parts[post_videos_num::]:
                     print("upload {} now".format(video_part.path))
-                    server_name = metered_upload_video_part(self.access_token, self.sid, self.mid, video_part, self.upload_rate*1000, self.max_retry,self.thread_pool_workers)
-                    if not server_name:
-                        print("upload failed")
-                        return None, None
-                    if live_info:
-                        live_info.load(live_info.filename)
-                        live_info.update_server_name(video_part.path, server_name)
-                        live_info.dump(live_info.filename)
-                        submit_data["title"] = live_info._data["live_title"]
+                    if video_part.server_file_name:
+                        print('video part {} exists. \nThe server_file_name is: {}'.format(video_part.path, video_part.server_file_name))
+                        post_videos_num += 1
+                    else:
+                        server_name = metered_upload_video_part(self.access_token, self.sid, self.mid, video_part, self.upload_rate*1000, self.max_retry,self.thread_pool_workers)
+                        if not server_name:
+                            print("upload failed")
+                            return None, None
+                        if live_info:
+                            live_info.load(live_info.filename)
+                            live_info.update_server_name(video_part.path, server_name)
+                            live_info.dump(live_info.filename)
+                            # submit_data["title"] = live_info._data["live_title"]
 
-                    post_videos_num += 1
-                    if self.submit_mode == 2:
-                        self.avid, self.bvid = submit_videos(self.access_token, self.sid, self.parts[0:post_videos_num], submit_data, existing_videos, self.avid)
+                        post_videos_num += 1
+                        if self.submit_mode == 2:
+                            self.avid, self.bvid = submit_videos(self.access_token, self.sid, self.parts[0:post_videos_num], submit_data, self.replace_tag, self.avid)
             else:
                 time.sleep(40)
                 dead_loop_count += 1
         if self.submit_mode == 1:
-            self.avid, self.bvid = submit_videos(self.access_token, self.sid, self.parts, submit_data, existing_videos, self.avid)
+            self.avid, self.bvid = submit_videos(self.access_token, self.sid, self.parts, submit_data, self.replace_tag, self.avid)
 
         print("Done! All {} videos uploaded!".format(post_videos_num))
 
@@ -772,7 +774,7 @@ def get_post_data(access_token, sid, avid):
     return r.json()["data"]
 
 @Retry(max_retry = 3, interval = 10).decorator
-def submit_videos(access_token, sid, parts, submit_data, existing_videos, avid = None):
+def submit_videos(access_token, sid, parts, submit_data, replace_tag, avid = None):
     '''
     Return avid, bvid
     '''
@@ -795,7 +797,7 @@ def submit_videos(access_token, sid, parts, submit_data, existing_videos, avid =
             'title': post_video_data["archive"]["title"],
             'videos': post_video_data["videos"]
         }
-        # edit archive data
+        # update old_data
         if submit_data.get('copyright'):
             old_data["copyright"] = submit_data.get('copyright')
         if submit_data.get('title'):
@@ -816,7 +818,9 @@ def submit_videos(access_token, sid, parts, submit_data, existing_videos, avid =
             old_data["open_elec"] = submit_data.get('open_elec')
         submit_data = old_data
 
-    submit_data['videos'] = deepcopy(existing_videos)
+    if replace_tag == 1:
+        submit_data['videos'] = []
+
     for video_part in parts:
         submit_data['videos'].append({
             "desc": video_part.desc,
@@ -870,27 +874,3 @@ def submit_videos(access_token, sid, parts, submit_data, existing_videos, avid =
         raise Exception(r.json())
     
     return data["aid"], data["bvid"]
-
-@Retry(max_retry = 3, interval = 10).decorator
-def archive_posted_videos(access_token, sid, avid):
-    '''
-    Return exitsing video info for given avid
-    '''
-    avid = int(avid)
-# Load previously submitted data
-    post_video_data = get_post_data(access_token, sid, avid)
-    old_data = {
-        'aid': avid,
-        'build': 1054,
-        'copyright': post_video_data["archive"]["copyright"],
-        'cover': post_video_data["archive"]["cover"],
-        'desc': post_video_data["archive"]["desc"],
-        'no_reprint': post_video_data["archive"]["no_reprint"],
-        'open_elec': post_video_data["archive_elec"]["state"], # open_elec not tested
-        'source': post_video_data["archive"]["source"],
-        'tag': post_video_data["archive"]["tag"],
-        'tid': post_video_data["archive"]["tid"],
-        'title': post_video_data["archive"]["title"],
-        'videos': post_video_data["videos"]
-    }
-    return old_data

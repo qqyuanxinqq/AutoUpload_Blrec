@@ -14,6 +14,6 @@ if __name__ == '__main__':
     if len(sys.argv) == 2:
         configured_upload(record_info_json, UPLOAD_CONFIGURATION)
     elif len(sys.argv) == 3:
-        bvid = sys.argv[2]
-        configured_upload(record_info_json, UPLOAD_CONFIGURATION, bvid = bvid)
+        avid = sys.argv[2]
+        configured_upload(record_info_json, UPLOAD_CONFIGURATION, avid = avid)
         
