@@ -406,7 +406,7 @@ def metered_upload_chunk(upload_url, server_file_name, local_file_name, chunk_da
     start_time = time.time()
     
     print(time.strftime('%Y-%m-%d %H:%M:%S',time.localtime(time.time())))
-    print("chunk{}/{}".format(chunk_id, chunk_total_num))
+    print("chunk{}/{}".format(chunk_id + 1, chunk_total_num))
     files = {
         'version': (None, '2.0.0.1054'),
         'filesize': (None, chunk_size),
@@ -430,13 +430,13 @@ def metered_upload_chunk(upload_url, server_file_name, local_file_name, chunk_da
         # print("Slow down", max(expected_time - (end_time - start_time), 0))
         time.sleep(max(expected_time - (end_time - start_time), 0))
 
-    return status
+    return r
 
 def check_upload_chunk(r):
     if r.status_code == 200 and r.json()['OK'] == 1:
         return True
     else:
-        print("Failed: "+r.content.decode())
+        # print("Failed: "+r.content.decode())
         return False
 
 
@@ -459,38 +459,66 @@ def metered_upload_video_part(access_token, sid, mid, video_part: VideoPart, upl
         print('video part {} exists. The server_file_name is: {}'.format(video_part.path, video_part.server_file_name))
         return video_part.server_file_name
     
-    headers = {
-        'Connection': 'keep-alive',
-        'Content-Type': 'application/x-www-form-urlencoded; charset=UTF-8',
-        'User-Agent': '',
-        'Accept-Encoding': 'gzip,deflate',
-    }
+    for i in range(0, 20):
+        headers = {
+            'Connection': 'keep-alive',
+            'Content-Type': 'application/x-www-form-urlencoded; charset=UTF-8',
+            'User-Agent': '',
+            'Accept-Encoding': 'gzip,deflate',
+        }
 
-    status, r = Retry(max_retry=max_retry).run(
-        requests.get,
-        "http://member.bilibili.com/preupload?access_key={}&mid={}&profile=ugcfr%2Fpc3".format(access_token, mid),
-        headers=headers,
-        cookies={
-            'sid': sid
-        },
-        verify=False,
-        timeout = 10,   
-    )   
+        status, r = Retry(max_retry=max_retry).run(
+            requests.get,
+            "https://member.bilibili.com/preupload?access_key={}&mid={}&profile=ugcfr%2Fpc3".format(access_token, mid),
+            headers=headers,
+            cookies={
+                'sid': sid
+            },
+            verify=False,
+            timeout = 10,   
+        )   
 
-    pre_upload_data = r.json()
-    upload_url = pre_upload_data['url']
-    print(f"Upload to \n {upload_url}")
-    complete_upload_url = pre_upload_data['complete']
-    server_file_name = pre_upload_data['filename']
-    local_file_name = video_part.path
-    file_size,chunk_total_num, chunk_generator = chunk_gen(local_file_name)
-    upload_rate_per_thread = upload_rate / thread_pool_workers
+        pre_upload_data = r.json()
+        upload_url = pre_upload_data['url']
+        print(f"Upload to \n {upload_url}")
+        complete_upload_url = pre_upload_data['complete']
+        server_file_name = pre_upload_data['filename']
+        local_file_name = video_part.path
+        file_size,chunk_total_num, chunk_generator = chunk_gen(local_file_name)
+        upload_rate_per_thread = upload_rate / thread_pool_workers
 
-    file_hash = hashlib.md5()
-     
+        file_hash = hashlib.md5()
+        
+        chunk_id,chunk_data = next(chunk_generator)     # read the first chunk
+        file_hash.update(chunk_data)
+        response = metered_upload_chunk(
+            upload_url=upload_url,
+            server_file_name=server_file_name,
+            local_file_name=os.path.basename(local_file_name),
+            chunk_data=chunk_data,
+            chunk_size=CHUNK_SIZE,
+            chunk_id=chunk_id,
+            chunk_total_num=chunk_total_num,
+            upload_rate=int(upload_rate_per_thread),
+            max_retry=1
+        )
+
+        if not response:
+            print("First chunk timed out")
+        elif check_upload_chunk(response):
+            print("First chunk success")
+            break
+        else:
+            print(response)
+            print(response.content.decode())
+            print("First chunk fail")
+
+        time.sleep(10)
+
+
     with ThreadPoolExecutor(max_workers=thread_pool_workers) as tpe:
         t_list = set()
-        readed_chunks = 0
+        readed_chunks = 1 # already readed the first chunk above
         while readed_chunks < chunk_total_num or t_list:
             while len(t_list)<= thread_pool_workers:
                 try:
@@ -513,11 +541,13 @@ def metered_upload_video_part(access_token, sid, mid, video_part: VideoPart, upl
                     max_retry=max_retry
                 )
                 t_list.add(t_obj)
+                
+                time.sleep(0.123) # avoid too many requests                
             
             done, t_list = wait(t_list, return_when = "FIRST_COMPLETED")
 
             for t in done:
-                if not t.result():
+                if not check_upload_chunk(t.result()):
                     print("upload failed in upload_video_part for: ", local_file_name)
                     return None
             # print(t_list)

@@ -216,8 +216,7 @@ class MyHandler(BaseHTTPRequestHandler):
         """
         filename = event['data']['path']
         (root, ext) = os.path.splitext(filename)
-        list_file = cls.videos_active.pop(root)
-        
+        list_file = cls.videos_active.get(root)
         live = Live(filename = list_file)
 
         if int(live._data['room_id']) in cls.room_ids:
@@ -235,6 +234,7 @@ class MyHandler(BaseHTTPRequestHandler):
         else:
             live.finalize_video_v1(filename = filename)
 
+        list_file = cls.videos_active.pop(root)
         live.dump()
 
         # if the list is in lists_fin_wait fin_wait, finalize it if no video is active
