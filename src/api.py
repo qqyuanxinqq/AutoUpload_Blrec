@@ -27,3 +27,13 @@ def get_title(room_id):
 
     return title
 
+def download_file(url, save_path):
+    try:
+        response = requests.get(url, stream=True)
+        response.raise_for_status()  # Raise an error for bad status codes
+        with open(save_path, 'wb') as file:
+            for chunk in response.iter_content(1024):
+                file.write(chunk)
+        # print(f"Image successfully downloaded: {save_path}")
+    except requests.RequestException as e:
+        print(f"Failed to download image: {e}")

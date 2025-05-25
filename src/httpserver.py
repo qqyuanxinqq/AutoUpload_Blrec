@@ -219,10 +219,15 @@ class MyHandler(BaseHTTPRequestHandler):
         list_file = cls.videos_active.get(root)
         live = Live(filename = list_file)
 
-        if int(live._data['room_id']) in cls.room_ids:
-            if str(live._data['room_id']) in cls._danmu_embed_list:
-                burn_subtitle_jsonl(filename)
+        # if there is video active, wait for 10 minutes (an ugly temporary fix to make sure the last video is the last in list)
+        if list_file in cls.videos_active.values() and list_file not in cls.room_ids.values():
+            import time
+            time.sleep(1200)
 
+        if str(live._data['room_id']) in cls._danmu_embed_list:
+            burn_subtitle_jsonl(filename)
+
+        live = Live(filename = list_file)
         # if this is the first video file, update live_title and video title
         # This because the lag in title updating from bilibili API
         if len(live._data['video_list']) == 0:
@@ -233,7 +238,6 @@ class MyHandler(BaseHTTPRequestHandler):
                 live.finalize_video_v1(filename = filename, title = title)
         else:
             live.finalize_video_v1(filename = filename)
-
         list_file = cls.videos_active.pop(root)
         live.dump()
 
